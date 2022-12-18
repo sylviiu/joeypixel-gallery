@@ -4,35 +4,35 @@ const time = require(`../util/time`)
 module.exports = {
     path: `/:path(*+)`,
     func: async (req, res) => {
-        console.log(`Main requested -- ${req.originalUrl}`)
+        console.log(`Main requested -- ${req.originalUrl}`);
+
+        const files = await new Promise(async res => require(`./8-getYears`).func(req, Object.assign({}, res, { send: res })));
 
         if(req.params.path.endsWith(`/`)) req.params.path = req.params.path.slice(0, -1)
-        if(req.params.path.startsWith(`/`)) req.params.path = req.params.path.slice(1)
+        if(req.params.path.startsWith(`/`)) req.params.path = req.params.path.slice(1);
+
+        const args = req.params.path.split(`/`);
+
+        const rawFile = files.getFile(req.params.path)
         
-        if(fs.existsSync(`./files/${req.params.path}/`)) {
-            const dir = fs.readdirSync(`./files/${req.params.path}`);
-
-            const dirs = dir.filter(f => fs.existsSync(`./files/${req.params.path}/${f}/`));
-            const files = dir.filter(f => dirs.indexOf(f) === -1);
-
-            console.log(`${dirs.length} dirs, ${files.length} files`);
-
-            const parse = (f, type) => {
-                const fd = fs.openSync(f), fstat = fs.fstatSync(fd);
-                const ms = Object.entries(fstat).filter(o => o[0].endsWith(`Ms`)).map(o => o[1]).sort()[0], utc = time(ms).utc;
-
-                return {
-                    type,
-                    name: f.split(`/`).slice(-1)[0],
-                    files: type == `directory` ? fs.readdirSync(f) : null,
-                    created: { ms, utc, },
-                    location: f.split(`/`).slice(2).join(`/`)
-                }
-            }
-
-            res.send([...dirs.map(d => parse(`./files/${req.params.path}/${d}`, `directory`)), ...files.map(f => parse(`./files/${req.params.path}/${f}`, f.split(`.`).slice(-1)[0]))])
-        } else if(fs.existsSync(`./files/${req.params.path}`)) {
-            res.sendFile(`${__dirname.split(`/`).slice(0, -1).join(`/`)}/files/${req.params.path}`)
-        } else return res.redirect(`/`)
+        if(rawFile) {
+            console.log(`Sending raw file -- raw path was given!`)
+            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + rawFile.location)
+        } else if(files[args[0]] && files[args[0]][args[1]] && files[args[0]][args[1]].find(o => o.name == args.slice(-1)[0])) {
+            console.log(`Sending processed file!`)
+            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].find(o => o.name == args.slice(-1)[0]).location)
+        } else if(files[args[0]] && !files[args[0]][args[1]]) {
+            console.log(`Sending year directory of ${args[0]}`)
+            res.send(files[args[0]])
+        } else if(files[args[0]] && files[args[0]][args[1]]) {
+            console.log(`Sending month directory of ${args[0]}/${args[1]}`)
+            res.send(files[args[0]][args[1]])
+        } else if(!args[0] && (args.length === 0 || args.length === 1)) {
+            console.log(`Sending root dir`)
+            res.send(files)
+        } else {
+            console.log(`Sending absolutely nothing.`)
+            res.send({})
+        }
     }
 }

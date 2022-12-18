@@ -440,18 +440,26 @@ let timestampStringToNum = function (ts) {
  };
 
  let utcDate = function(ms) {
-    const month = [`Jan`, `Feb`, `Mar`, `Apr`, `May`, `June`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov`, `Dec`]
-    const wk = [`Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`]
+     const month = [`Jan`, `Feb`, `Mar`, `Apr`, `May`, `June`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov`, `Dec`]
+     const wk = [`Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`]
 
-    const date = new Date(ms);
-    return `${wk[date.getUTCDay()]}, ${month[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getFullYear()} at ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`
- }
+     const date = new Date(ms);
+     const string = `${wk[date.getUTCDay()]}, ${month[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()} at ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`;
+
+     return { 
+          string,
+          date: {
+               year: `${date.getUTCFullYear()}`,
+               month: `${date.getUTCMonth()+1}`.length === 1 ? `0${date.getUTCMonth()+1}` : `${date.getUTCMonth()+1}`
+          },
+     }
+}
  
  module.exports = (content) => {
      let returnObject = {
          timestamp: `--:--`,
          string: ``,
-         utc: ``,
+         utc: {},
          units: {
              infinite: 0, 
              year: 0, 
