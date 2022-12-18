@@ -37,7 +37,9 @@ module.exports = {
                         name = name.slice(21 - 14);
                         const yr = name.slice(0, 4), month = name.slice(4, 6), day = name.slice(6, 8), h = name.slice(8, 10), m = name.slice(10, 12), s = name.slice(12, 14);
                         date = (new Date(`${yr}-${month}-${day}T${h}-${m}-${s}`)).getTime()
-                    }
+                    };
+
+                    if(date) console.log(`Overriding date of ${dir.split(`/`).slice(-1)[0]} to ${date}`)
 
                     const fd = fs.openSync(dir), fstat = fs.fstatSync(fd);
                     const ms = date || Object.entries(fstat).filter(o => o[0].endsWith(`Ms`)).map(o => o[1]).sort()[0]
