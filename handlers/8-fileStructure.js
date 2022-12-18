@@ -25,7 +25,7 @@ module.exports = {
 
                     let date = null, datestr = null;
 
-                    if(name.startsWith(`VRChat_`)) {
+                    if(name.startsWith(`VRChat_`) || name.startsWith(`vrchat_`)) {
                         if(name.split(`_`).length === 4 && !name.includes(`(`) && !name.split(`_`).slice(-1)[0].includes(`x`)) name = name.split(`_`).slice(1).join(`_`)
                         const day = name.split(`_`).slice(1, 2)[0].split(`-`);
                         const time = name.split(`_`).slice(2, 3)[0].split(`.`)[0].split(`-`);
