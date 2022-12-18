@@ -1,3 +1,5 @@
+const cp = require('child_process')
+
 module.exports = () => new Promise((res, rej) => {
     console.log(`Checking for updates...`)
     cp.exec(`git reset --hard`, (err, out, stderr) => {
