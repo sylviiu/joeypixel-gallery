@@ -17,19 +17,21 @@ module.exports = {
             const parseFiles = (d) => {
                 if(d.files && d.files.length > 0) {
                     d.files.forEach(f => {
-                        if(f.type == `directory`) {
-                            parseFiles(f)
-                        } else {
-                            const year = `${f.createdAt.utc.date.year}`;
-                            if(!files[year]) files[year] = {};
-                            
-                            const month = `${f.createdAt.utc.date.month}`;
-                            if(!files[year][month]) files[year][month] = [];
-    
-                            files[year][month].push(Object.assign({}, f, {
-                                createdAt: f.createdAt.ms,
-                                year, month
-                            }))
+                        if(f) {
+                            if(f.type == `directory`) {
+                                parseFiles(f)
+                            } else {
+                                const year = `${f.createdAt.utc.date.year}`;
+                                if(!files[year]) files[year] = {};
+                                
+                                const month = `${f.createdAt.utc.date.month}`;
+                                if(!files[year][month]) files[year][month] = [];
+        
+                                files[year][month].push(Object.assign({}, f, {
+                                    createdAt: f.createdAt.ms,
+                                    year, month
+                                }))
+                            }
                         }
                     })
                 }
