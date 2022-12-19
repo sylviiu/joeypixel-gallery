@@ -37,7 +37,7 @@ module.exports = () => new Promise(async res => {
         console.log(`Removed ${f}`)
     };
 
-    for(i in thumbnails) {
+    for(i in thumbnails.filter(o => o.cachedImage.exists === false)) {
         let f = thumbnails[i];
         await new Promise(async res => {
             console.log(`Creating thumbnail of ${f.location}`)
