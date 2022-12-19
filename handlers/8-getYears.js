@@ -6,12 +6,9 @@ let cached = null;
 module.exports = {
     path: `/getYears`,
     func: async (req, res) => {
-        console.log(`getYears requested`);
-
         let files = {};
 
         if(cached) {
-            console.log(`using cached files`)
             files = cached
         } else {
             const parseFiles = (d) => {

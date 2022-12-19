@@ -4,8 +4,6 @@ const time = require(`../util/time`)
 module.exports = {
     path: `/:path(*+)`,
     func: async (req, res) => {
-        console.log(`Main requested -- ${req.originalUrl}`);
-
         const files = await new Promise(async resp => require(`./8-getYears`).func(req, Object.assign({}, res, { send: resp })));
 
         if(req.params.path.endsWith(`/`)) req.params.path = req.params.path.slice(0, -1)
