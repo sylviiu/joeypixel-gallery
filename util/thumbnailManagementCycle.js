@@ -7,9 +7,9 @@ const create = (path) => new Promise(res => require(`../handlers/0-thumbnail`).f
     originalUrl: `[CREATETHUMBNAILS] / ${path}`
 }, {
     set: () => {},
-    redirect: res,
-    sendFile: res,
-    send: res,
+    redirect: () => res(),
+    sendFile: () => res(),
+    send: () => res(),
 }));
 
 module.exports = () => new Promise(async res => {
