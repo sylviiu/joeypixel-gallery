@@ -100,11 +100,9 @@ module.exports = {
     path: `/thumbnail/:path(*+)`,
     func: async (req, res) => {
         if(req.params.path) {
-            const start = Date.now();
-    
-            let files = await new Promise(async res => require(`./9-main`).func(req, Object.assign({}, res, {
-                send: res,
-                sendFile: res,
+            let files = await new Promise(async resp => require(`./9-main`).func(req, Object.assign({}, res, {
+                send: resp,
+                sendFile: resp,
             })));
 
             const args = req.params.path.split(`/`);
@@ -122,7 +120,7 @@ module.exports = {
             if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
 
             if((files && fs.existsSync(files))) {
-                const fileName = Buffer.from(files.split(``).reverse().join(``)).toString(`base64`).substring(0, 20) + `.png`
+                const fileName = require('../util/getCacheName')(files)
 
                 if(!fs.existsSync(`./cache/${fileName}`)) {
                     sendImg(files).then(i => {
@@ -138,10 +136,10 @@ module.exports = {
     
                 console.log(`Thumbnail requested -- ${req.originalUrl} // typeof files response: ${typeof files} (length: ${files.length ? files.length : `--`})`);
         
-                for(let i = files.length - 1; i > 0; i--){
-                    const j = Math.floor(Math.random() * i), temp = files[i]
-                    files[i] = files[j], files[j] = temp
-                }; files = files.slice(0, 4)
+                if(typeof files.length == `number` && files.length > 0) {
+                    require(`../util/randomize`)(files); 
+                    files = files.slice(0, 4)
+                }
     
                 console.log(files);
 

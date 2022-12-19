@@ -47,12 +47,22 @@ module.exports = {
                     const fd = fs.openSync(dir), fstat = fs.fstatSync(fd);
                     const ms = date || Object.entries(fstat).filter(o => o[0].endsWith(`Ms`)).map(o => o[1]).sort()[0]
                     const utc = time(ms).utc;
+
+                    const cachedImages = fs.readdirSync(`./cache/`)
+
+                    const cachedImage = require('../util/getCacheName')(dir.split(`/`).slice(2).join(`/`));
+
+                    //console.log(`${dir.split(`/`).slice(-1)[0]} as ${cachedImage} exists? ${cachedImages.indexOf(cachedImage) != -1 ? true : false}`)
     
                     return {
                         createdAt: { ms, utc },
                         name: dir.split(`/`).slice(-1)[0],
                         location: dir.split(`/`).slice(2).join(`/`),
-                        type: dir.split(`/`).slice(-1)[0].split(`.`).slice(-1)[0]
+                        type: dir.split(`/`).slice(-1)[0].split(`.`).slice(-1)[0],
+                        cachedImage: {
+                            file: cachedImage,
+                            exists: cachedImages.indexOf(cachedImage) != -1 ? true : false
+                        }
                     }
                 } catch(e2) {
                     console.warn(`Coudln't read directory OR file:\n- Directory: ${e}\n- File: ${e2}\nReturning null.`);

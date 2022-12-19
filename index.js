@@ -35,6 +35,15 @@ update().then(() => {
     })
 
     const server = app.listen(8080, async () => {
-        console.log(`Server is online, listening @ port ${server._connectionKey.split(`:`).slice(-1)[0]}!`)
+        console.log(`Server is online, listening @ port ${server._connectionKey.split(`:`).slice(-1)[0]}!`);
+
+        require(`./util/thumbnailManagementCycle`)().then(async () => {
+            console.log(`Completed thumbnail management!`)
+            while(true) {
+                await new Promise(r => setTimeout(r, 60000));
+                await require(`./util/thumbnailManagementCycle`)()
+                console.log(`Completed thumbnail management!`)
+            }
+        })
     })
 })

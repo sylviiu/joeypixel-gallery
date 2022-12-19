@@ -6,7 +6,7 @@ module.exports = {
     func: async (req, res) => {
         console.log(`Main requested -- ${req.originalUrl}`);
 
-        const files = await new Promise(async res => require(`./8-getYears`).func(req, Object.assign({}, res, { send: res })));
+        const files = await new Promise(async resp => require(`./8-getYears`).func(req, Object.assign({}, res, { send: resp })));
 
         if(req.params.path.endsWith(`/`)) req.params.path = req.params.path.slice(0, -1)
         if(req.params.path.startsWith(`/`)) req.params.path = req.params.path.slice(1);
@@ -16,7 +16,7 @@ module.exports = {
         const rawFile = files.getFile(req.params.path)
         
         if(rawFile) {
-            console.log(`Sending raw file -- raw path was given!`)
+            console.log(`Sending raw file -- raw path was given!`);
             res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + rawFile.location)
         } else if(files[args[0]] && files[args[0]][args[1]] && files[args[0]][args[1]].find(o => o.name == args.slice(-1)[0])) {
             console.log(`Sending processed file!`)

@@ -37,7 +37,7 @@ module.exports = {
                 }
             }
     
-            const fileStructure = await new Promise(async res => require(`./8-fileStructure`).func(req, Object.assign({}, res, { send: res })));
+            const fileStructure = await new Promise(async resp => require(`./8-fileStructure`).func(req, Object.assign({}, res, { send: resp })));
     
             fileStructure.forEach(parseFiles);
 
