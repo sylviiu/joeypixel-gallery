@@ -4,11 +4,11 @@ const jimp = require('jimp-native');
 const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res => {
     const start = Date.now();
 
-    if(!width) width = 256;
-    if(!height) height = 256;
+    if(!width) width = 432;
+    if(!height) height = 243;
     if(getBuffer === undefined) getBuffer = true;
 
-    console.log(`Setting size ${width}x${height}`)
+    console.log(`Setting size ${width}x${height}; dir: ${dir}`)
 
     const img = await jimp.read(dir);
 
@@ -39,7 +39,7 @@ const makeCollage = (...files) => new Promise(async res => {
     console.log(`Making collage with ${files.length} files`);
 
     if(files.length === 1) {
-        return makeImage({ dir: files[0] }).then(res)
+        return makeImage({ dir: files[0], getBuffer: true, }).then(res)
     } else if(files.length === 2) {
         const imgs = await Promise.all(files.map(f => makeImage({ dir: f, width: 128, height: 256, getBuffer: false })));
 
@@ -100,37 +100,58 @@ module.exports = {
     path: `/thumbnail/:path(*+)`,
     func: async (req, res) => {
         if(req.params.path) {
-            if(req.params.path.endsWith(`/`)) req.params.path = req.params.path.slice(0, -1)
-            if(req.params.path.startsWith(`/`)) req.params.path = req.params.path.slice(1)
-
-            console.log(`Thumbnail requested -- ${req.originalUrl}`);
-    
             const start = Date.now();
     
-            const dir = `${__dirname.split(`/`).slice(0, -1).join(`/`)}/files/${req.params.path}`
+            let files = await new Promise(async res => require(`./9-main`).func(req, Object.assign({}, res, {
+                send: res,
+                sendFile: res,
+            })));
+
+            const args = req.params.path.split(`/`);
+
+            const sendImg = async (dir) => new Promise(async resp => {
+                const m = await makeImage({ dir, getBuffer: true, });
+
+                res.set(`Content-Type`, `image/png`);
+                res.set(`Content-Length`, `${m.length}`);
+
+                res.send(m);
+                resp(m)
+            });
+
+            if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
+
+            if((files && fs.existsSync(files))) {
+                const fileName = Buffer.from(files).toString(`base64url`).substring(0, 20) + `.png`
+
+                if(!fs.existsSync(`./cache/${fileName}`)) {
+                    sendImg(files).then(i => {
+                        if(!fs.existsSync(`./cache/`)) fs.mkdirSync(`./cache`);
+
+                        fs.writeFile(`./cache/${fileName}`, i, () => {
+                            console.log(`Cached file ${files} as ${fileName}`)
+                        })
+                    })
+                } else res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/cache/` + fileName)
+            } else {
+                if(typeof files.length !== `number`) files = Object.assign([], ...Object.values(files))
     
-            console.log(`Checking for dir ${dir}`)
+                console.log(`Thumbnail requested -- ${req.originalUrl} // typeof files response: ${typeof files} (length: ${files.length ? files.length : `--`})`);
+        
+                for(let i = files.length - 1; i > 0; i--){
+                    const j = Math.floor(Math.random() * i), temp = files[i]
+                    files[i] = files[j], files[j] = temp
+                }; files = files.slice(0, 4)
+    
+                console.log(files);
 
-            if(fs.existsSync(dir + `/`)) {
-                const dir2 = fs.readdirSync(dir + `/`).filter(f => !fs.existsSync(dir + `/` + f + `/`) && fs.existsSync(dir + `/` + f));
-                console.log(`${dir2.length} file(s) in ${dir}`)
-
-                if(dir2.length === 0) {
-                    return res.redirect(`https://i.nyx.bot/null.png`)
-                } else {
-                    const send = require(`../util/randomize`)(dir2.map(f => dir + `/` + f))
-                    const buffer = await makeCollage(...send)
-                    console.log(`Received buffer! (${Buffer.byteLength(buffer)*1e-6}mb)`)
-                    res.set(`Content-Type`, `image/png`).set(`Content-Length`, buffer.length).send(buffer)
-                }
-            } else if(fs.existsSync(dir)) {
-                let params = {  dir, };
-                if(req.query.tiny) params.width = 64; params.height = 64
-
-                const buffer = await makeImage(params)
-                console.log(`Received buffer! (${Buffer.byteLength(buffer)*1e-6}mb)`)
-                res.set(`Content-Type`, `image/png`).set(`Content-Length`, buffer.length).send(buffer)
-            } else res.redirect(`https://i.nyx.bot/null.png`)
+                makeCollage(...files.map(f => __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + f.location)).then(i => {
+                    res.set(`Content-Type`, `image/png`);
+                    res.set(`Content-Length`, `${i.length}`);
+    
+                    res.send(i)
+                })
+            }
         } else return res.redirect(`https://i.nyx.bot/null.png`)
     }
 }
