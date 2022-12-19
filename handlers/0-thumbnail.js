@@ -1,5 +1,5 @@
 const fs = require('fs');
-const jimp = require('jimp-native');
+const jimp = require('jimp');
 
 const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res => {
     const start = Date.now();
