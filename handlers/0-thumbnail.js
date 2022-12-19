@@ -115,11 +115,16 @@ module.exports = {
             const sendImg = async (dir) => new Promise(async resp => {
                 const m = await makeImage({ dir, getBuffer: true, });
 
-                res.set(`Content-Type`, `image/png`);
-                res.set(`Content-Length`, `${m.length}`);
-
-                res.send(m);
-                resp(m)
+                if(m) {
+                    res.set(`Content-Type`, `image/png`);
+                    res.set(`Content-Length`, `${m.length}`);
+    
+                    res.send(m);
+                    resp(m)
+                } else {
+                    res.send(null);
+                    resp(null)
+                }
             });
 
             if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
@@ -129,11 +134,13 @@ module.exports = {
 
                 if(!fs.existsSync(`./cache/${fileName}`)) {
                     sendImg(files).then(i => {
-                        if(!fs.existsSync(`./cache/`)) fs.mkdirSync(`./cache`);
-
-                        fs.writeFile(`./cache/${fileName}`, i, () => {
-                            console.log(`Cached file ${files} as ${fileName}`)
-                        })
+                        if(i) {
+                            if(!fs.existsSync(`./cache/`)) fs.mkdirSync(`./cache`);
+    
+                            fs.writeFile(`./cache/${fileName}`, i, () => {
+                                console.log(`Cached file ${files} as ${fileName}`)
+                            })
+                        }
                     })
                 } else res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/cache/` + fileName)
             } else {
