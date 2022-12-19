@@ -37,15 +37,17 @@ module.exports = () => new Promise(async res => {
         console.log(`Removed ${f}`)
     };
 
-    for(i in thumbnails.filter(o => o.cachedImage.exists === false)) {
-        let f = thumbnails[i];
+    const toCache = thumbnails.filter(o => o.cachedImage.exists === false)
+
+    for(i in toCache) {
+        let f = toCache[i];
         await new Promise(async res => {
             console.log(`Creating thumbnail of ${f.location}`)
     
             let start = Date.now()
             await create(`${f.year}/${f.month}/${f.location}`);
 
-            console.log(`Completed ${f.location} -- ${thumbnails.length - i} remaining!`)
+            console.log(`Completed ${f.location} -- ${toCache.length - i} remaining!`)
             
             if(/*Date.now() - start > 200*/ false) {
                 console.log(`It took more than 200ms to complete this image! (${Date.now() - start}ms) -- waiting for next one to keep cpu cycles clean`);
