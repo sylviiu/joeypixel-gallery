@@ -122,7 +122,7 @@ module.exports = {
             if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
 
             if((files && fs.existsSync(files))) {
-                const fileName = Buffer.from(files).toString(`base64url`).substring(0, 20) + `.png`
+                const fileName = Buffer.from(files.reverse()).toString(`base64`).substring(0, 20) + `.png`
 
                 if(!fs.existsSync(`./cache/${fileName}`)) {
                     sendImg(files).then(i => {
