@@ -10,21 +10,26 @@ const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res =
 
     console.log(`Setting size ${width}x${height}; dir: ${dir}`)
 
-    const img = await jimp.read(dir);
-
-    img.cover(width, height);
-
-    if(getBuffer) {
-        img.getBuffer(jimp.MIME_PNG, (err, buffer) => {
-            if(err) {
-                console.error(err);
-                res(null)
-            } else {
-                console.log(`Took ${Date.now() - start}ms to complete file ${dir}!`)
-                res(buffer)
-            }
-        })
-    } else return res(img)
+    try {
+        const img = await jimp.read(dir);
+    
+        img.cover(width, height);
+    
+        if(getBuffer) {
+            img.getBuffer(jimp.MIME_PNG, (err, buffer) => {
+                if(err) {
+                    console.error(err);
+                    res(null)
+                } else {
+                    console.log(`Took ${Date.now() - start}ms to complete file ${dir}!`)
+                    res(buffer)
+                }
+            })
+        } else return res(img)
+    } catch(e) {
+        console.error(e);
+        res(null)
+    }
 })
 
 const makeCollage = (...files) => new Promise(async res => {
