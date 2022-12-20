@@ -4,7 +4,7 @@ const fs = require('fs');
 
 let update = () => new Promise(res => res(console.log(`Not checking for updates.`)))
 
-if(process.argv.indexOf(`production`) === -1) {
+if(process.argv.indexOf(`production`) === -1 || process.env.galleryProduction) {
     console.log(`This is not running in production! Will not check for updates.`)
 } else {
     console.log(`This is running in production! Will check for updates.`);
