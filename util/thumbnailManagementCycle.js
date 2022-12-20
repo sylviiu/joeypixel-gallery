@@ -25,7 +25,14 @@ module.exports = () => new Promise(async res => {
         send: res,
     }));
 
-    let thumbnails = []; Object.assign([], ...Object.values(files).map(o => Object.values(o))).forEach(o => thumbnails.push(...o))
+    let thumbnails = []; 
+    Object.values(files).map(o => Object.values(o)).forEach(o => {
+        if(o.length && o.length > 0) {
+            o.forEach(p => thumbnails.push(...p))
+        } else {
+            thumbnails.push(...o)
+        }
+    });
     
     const thumbnailsToDelete = fs.readdirSync(`./cache/`).filter(f => thumbnails.filter(o => o.cachedImage.exists).find(o => o.cachedImage.exists === false));
 
