@@ -5,15 +5,32 @@ let fileStructure = {};
 
 const readFileStructure = () => new Promise(async res => {
     console.log(`Reading structure...`)
-    const parseDir = (dir) => {
+    const parseDir = (dir) => new Promise(async res => {
         try {
             const read = typeof dir == `object` ? dir : fs.readdirSync(dir);
-            return {
+
+            let mapped = [];
+
+            let parsedProgress = 0;
+
+            let timer = setInterval(() => console.log(`progress of parseDir: ${Math.round(parsedProgress*100)}%`), 3000)
+
+            for (i in read) {
+                let f = read[i];
+                parsedProgress = (Number(i)+1)/read.length
+                const parsed = await parseDir(dir + `/` + f)
+                mapped.push(parsed)
+                await new Promise(r => setTimeout(r, 10))
+            };
+
+            clearInterval(timer)
+
+            res({
                 name: dir.split(`/`).slice(-1)[0],
                 location: dir.split(`/`).slice(2).join(`/`),
                 type: fs.existsSync(dir + `/`) ? `directory` : dir.split(`.`).slice(-1)[0],
-                files: read.map(f => parseDir(dir + `/` + f))
-            }
+                files: mapped
+            })
         } catch(e) {
             //console.warn(`Couldn't readdir for ${dir} -- ${e}, attempting file`);
 
@@ -53,7 +70,7 @@ const readFileStructure = () => new Promise(async res => {
 
                 //console.log(`${dir.split(`/`).slice(-1)[0]} as ${cachedImage} exists? ${cachedImages.indexOf(cachedImage) != -1 ? true : false}`)
 
-                return {
+                res({
                     createdAt: { ms, utc },
                     name: dir.split(`/`).slice(-1)[0],
                     location: dir.split(`/`).slice(2).join(`/`),
@@ -62,20 +79,20 @@ const readFileStructure = () => new Promise(async res => {
                         file: cachedImage,
                         exists: cachedImages.indexOf(cachedImage) != -1 ? true : false
                     }
-                }
+                })
             } catch(e2) {
                 console.warn(`Coudln't read directory OR file:\n- Directory: ${e}\n- File: ${e2}\nReturning null.`);
-                return null;
+                res(null);
             }
         }
-    }
+    })
     
     const files = fs.readdirSync(`./files`);
 
     let f = [];
 
     for (o of files) {
-        const a = parseDir(`./files/${o}`);
+        const a = await parseDir(`./files/${o}`);
         f.push(a)
         await new Promise(r => setTimeout(r, 10))
     }

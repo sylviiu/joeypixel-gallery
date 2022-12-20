@@ -42,8 +42,9 @@ const cacheNow = () => new Promise(async res => {
 
     const fileStructure = await new Promise(async resp => require(`./8-fileStructure`).func({ }, { send: resp, }));
     
-    for(f of fileStructure) {
-        let timer = setInterval(() => console.log(`years parsing progress: ${Math.round(progress*100)}%`), 3000)
+    for(i in fileStructure) {
+        let f = fileStructure[i];
+        let timer = setInterval(() => console.log(`years parsing progress: (index ${i}) / ${Math.round(progress*100)}%`), 3000)
         await parseFiles(f);
         clearInterval(timer);
         await new Promise(r => setTimeout(r, 10))
