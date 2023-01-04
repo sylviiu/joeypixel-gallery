@@ -64,7 +64,7 @@ const readFileStructure = () => new Promise(async res => {
                 const ms = date || Object.entries(fstat).filter(o => o[0].endsWith(`Ms`)).map(o => o[1]).sort()[0]
                 const utc = time(ms).utc;
 
-                const cachedImages = fs.readdirSync(`./cache/`)
+                const cachedImages = fs.existsSync(`./cache/`) ? fs.readdirSync(`./cache/`) : []
 
                 const cachedImage = require('../util/getCacheName')(dir.split(`/`).slice(2).join(`/`));
 

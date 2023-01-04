@@ -1,6 +1,7 @@
 const fs = require('fs');
 const jimp = require('jimp');
 const sharp = require('sharp');
+const cp = require('child_process')
 
 const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res => {
     const start = Date.now();
@@ -9,29 +10,90 @@ const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res =
     if(!height) height = 243;
     if(getBuffer === undefined) getBuffer = true;
 
-    console.log(`Setting size ${width}x${height}; dir: ${dir}`)
+    console.log(`Setting size ${width}x${height}; dir: ${dir}; buffer: ${getBuffer}`);
 
-    const jimpFallback = async () => {
+    const sharpRun = (bufOverride) => new Promise(async (res2, rej) => {
+        console.log(`--- Running sharp... ${bufOverride ? `[buffer provided, length: ${bufOverride.length}]` : ``}`)
+        sharp(bufOverride || dir).resize({
+            width,
+            height,
+            inside: true,
+        }).toBuffer().then(res2).catch(rej)
+    })
+
+    const jimpFallback = async (bufOverride) => new Promise(async (res2, rej) => {
+        console.log(`--- Running jimp... ${bufOverride ? `[buffer provided, length: ${bufOverride.length}]` : ``}`)
         try {
-            const img = await jimp.read(dir);
+            const img = await jimp.read(bufOverride || dir);
             
             img.cover(width, height);
         
-            return res(img)
+            return res2(img)
         } catch(e) {
-            console.error(e);
-            res(null)
+            rej(e)
         }
-    }
+    })
+
+    const ffmpegVideoFallback = () => new Promise(async (res2, rej) => {
+        console.log(`--- Running FFmpeg...`)
+        // -i inputfile.mkv -vf "select=eq(n\,0)" -q:v 3 output_image.jpg
+        const ff = cp.spawn(`ffmpeg`, [
+            `-i`, dir,
+            `-ss`, `00:00:3`,
+            `-s`, `${width}x${height}`,
+            `-vframes`, `1`,
+            `-c:v`, `png`,
+            `-f`, `image2pipe`,
+            `-`,
+        ]);
+
+        let buf = null;
+
+        ff.stdout.on(`data`, d => {
+            if(!buf) {
+                buf = d
+            } else {
+                buf = Buffer.concat([buf, d])
+            }
+            console.log(`Got ${d.length} size buffer, total: ${buf.length}`)
+        });
+
+        ff.on(`error`, (e) => {
+            console.warn(`Failed to run FF: ${e}`);
+            rej(e)
+        })
+        
+        ff.on(`close`, (sig) => {
+            console.log(`FF Closed with sig ${sig}`);
+            if(getBuffer) {
+                res2(buf)
+            } else {
+                jimpFallback(buf).then(res2).catch(rej)
+            }
+        });
+    })
 
     try {
         if(getBuffer) {
-             sharp(dir).resize({
-                width,
-                height,
-                inside: true,
-             }).toBuffer().then(res).catch(jimpFallback)
-        } else jimpFallback()
+             sharpRun().then(res).catch(e => {
+                console.warn(`${e} -- going to jimpFallback`);
+                jimpFallback().then(res).catch(e2 => {
+                    console.warn(`${e2} -- trying ffmpeg video frame extraction`)
+                    ffmpegVideoFallback().then(res).catch(e3 => {
+                        console.warn(`${e3}`);
+                        res(null)
+                    })
+                })
+             })
+        } else {
+            jimpFallback().then(res).catch(e2 => {
+                console.warn(`${e2} -- trying ffmpeg video frame extraction`)
+                ffmpegVideoFallback().then(res).catch(e3 => {
+                    console.warn(`${e3}`);
+                    res(null)
+                })
+            })
+        }
     } catch(e) {
         console.error(e);
         res(null)

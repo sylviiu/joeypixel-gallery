@@ -34,7 +34,7 @@ module.exports = () => new Promise(async res => {
         }
     });
     
-    const thumbnailsToDelete = fs.readdirSync(`./cache/`).filter(f => thumbnails.filter(o => o.cachedImage.exists).find(o => o.cachedImage.exists === false));
+    const thumbnailsToDelete = (fs.existsSync(`./cache/`) ? fs.readdirSync(`./cache/`) : []).filter(f => thumbnails.filter(o => o.cachedImage.exists).find(o => o.cachedImage.exists === false));
 
     console.log(thumbnails.length + ` total thumbnails exist! deleting ${thumbnailsToDelete.length} that are not in this list...`);
 
