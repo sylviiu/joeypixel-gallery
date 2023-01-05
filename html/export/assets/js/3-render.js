@@ -16,6 +16,7 @@ const render = (list) => {
         a.style.cssText = i.style.cssText;
         i.style.width = `100%`;
         i.style[`margin-bottom`] = `0px`
+        i.style[`margin-top`] = `0px`
 
         a.href = `${conf.req.http}://${conf.req.location}${conf.req.port ? `:${conf.req.port}` : ``}/${file.year}/${file.month}/${file.name}`;
         i.src = `${conf.req.http}://${conf.req.location}${conf.req.port ? `:${conf.req.port}` : ``}/thumbnail/${file.year}/${file.month}/${file.name}`;
