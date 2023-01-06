@@ -13,7 +13,13 @@ module.exports = {
 
         const rawFile = files.getFile(req.params.path)
         
-        if(rawFile) {
+        if(fs.existsSync(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`)) {
+            console.log(`Sending raw overriden file -- raw path was given, and override exists! [1] (${__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`})`);
+            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`)
+        } else if(fs.existsSync(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${rawFile}`)) {
+            console.log(`Sending raw overriden file -- raw path was given, and override exists! [2] (${__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`})`);
+            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${rawFile}`)
+        } else if(rawFile) {
             //console.log(`Sending raw file -- raw path was given!`);
             res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + rawFile.location)
         } else if(files[args[0]] && files[args[0]][args[1]] && files[args[0]][args[1]].find(o => o.name == args.slice(-1)[0])) {
