@@ -11,7 +11,7 @@ const cacheNow = () => new Promise(async res => {
     let progress = 0;
 
     const parseFiles = (d) => new Promise(async r => {
-        if(d.files && d.files.length > 0) {
+        if(d && d.files && d.files.length > 0) {
             for (i in d.files) {
                 let f = d.files[i];
 

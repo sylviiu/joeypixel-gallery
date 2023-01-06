@@ -70,16 +70,23 @@ const readFileStructure = () => new Promise(async res => {
 
                 //console.log(`${dir.split(`/`).slice(-1)[0]} as ${cachedImage} exists? ${cachedImages.indexOf(cachedImage) != -1 ? true : false}`)
 
-                res({
+                const mediaType = cachedImage.includes(`-`) ? cachedImage.split(`-`).slice(0, -1).join(`-`) : null;
+
+                const obj = {
                     createdAt: { ms, utc },
                     name: dir.split(`/`).slice(-1)[0],
                     location: dir.split(`/`).slice(2).join(`/`),
+                    mediaType: mediaType || `image`,
                     type: dir.split(`/`).slice(-1)[0].split(`.`).slice(-1)[0],
                     cachedImage: {
                         file: cachedImage,
                         exists: cachedImages.indexOf(cachedImage) != -1 ? true : false
                     }
-                })
+                }
+
+                if(mediaType) console.log(`file ${dir} has cached name media type of ${mediaType}`, obj)
+
+                res(obj)
             } catch(e2) {
                 console.warn(`Coudln't read directory OR file:\n- Directory: ${e}\n- File: ${e2}\nReturning null.`);
                 res(null);

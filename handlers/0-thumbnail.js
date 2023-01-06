@@ -3,7 +3,7 @@ const jimp = require('jimp');
 const sharp = require('sharp');
 const cp = require('child_process')
 
-const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res => {
+const makeImage = ({ dir, width, height, getBuffer, mediaType }) => new Promise(async res => {
     const start = Date.now();
 
     if(!width) width = 432;
@@ -27,8 +27,25 @@ const makeImage = ({ dir, width, height, getBuffer }) => new Promise(async res =
             const img = await jimp.read(bufOverride || dir);
             
             img.cover(width, height);
-        
-            return res2(img)
+
+            if(mediaType) {
+                let lowestRes = width > height ? height : width
+
+                const play = await jimp.read(dir.split(`/files`)[0] + `/icons/media.png`);
+                play.resize(lowestRes/3, lowestRes/3);
+
+                img.composite(play, (width/2) - (lowestRes/2), (height/2) - (lowestRes/2))
+            }
+
+            if(getBuffer) {
+                img.getBuffer(jimp.MIME_PNG, (e, buf) => {
+                    if(e) {
+                        rej(e)
+                    } else {
+                        res2(buf)
+                    }
+                })
+            } else return res2(img)
         } catch(e) {
             rej(e)
         }
@@ -180,8 +197,12 @@ module.exports = {
 
             const args = req.params.path.split(`/`);
 
+            if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
+            
+            const fileName = require('../util/getCacheName')(files)
+
             const sendImg = async (dir) => new Promise(async resp => {
-                const m = await makeImage({ dir, getBuffer: true, });
+                const m = await makeImage({ dir, getBuffer: true, mediaType: fileName.includes(`-`) ? fileName.split(`-`).slice(0, -1).join(`-`) : null });
 
                 if(m) {
                     res.set(`Content-Type`, `image/png`);
@@ -195,11 +216,7 @@ module.exports = {
                 }
             });
 
-            if(args[0] && args[1] && files[args[0]] && files[args[0]][args[1]]) files = __dirname.split(`/`).slice(0, -1).join(`/`) + `/files/` + files[args[0]][args[1]].location
-
             if((files && fs.existsSync(files))) {
-                const fileName = require('../util/getCacheName')(files)
-
                 if(!fs.existsSync(`./cache/${fileName}`)) {
                     sendImg(files).then(i => {
                         if(i) {
