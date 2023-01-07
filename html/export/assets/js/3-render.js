@@ -21,6 +21,8 @@ const render = (list) => {
         a.href = `${conf.req.http}://${conf.req.location}${conf.req.port ? `:${conf.req.port}` : ``}/${file.year}/${file.month}/${file.name}`;
         i.src = `${conf.req.http}://${conf.req.location}${conf.req.port ? `:${conf.req.port}` : ``}/thumbnail/${file.year}/${file.month}/${file.name}`;
 
+        scaleImageAnim(a, file)
+
         a.appendChild(i)
 
         console.log(`set src as ${i.src}`)
@@ -32,11 +34,11 @@ const render = (list) => {
 
     //rows.forEach(row => imagesColumn.appendChild(row))
 
+    imagesColumn.appendChild(rows[0])
+
     for (row of rows) {
         imagesColumn.appendChild(row)
     }
-
-    imagesColumn.appendChild(rows[0])
 }
 
 const parseRequest = async (r, selectedYear, selectedMonth) => {
@@ -66,6 +68,8 @@ const parseRequest = async (r, selectedYear, selectedMonth) => {
 
         yr.onclick = () => refreshHeaderBar(`${year}`)
 
+        scaleAnim(yr)
+
         let monthButtons = [];
 
         if((!selectedYear && index === years.length-1) || (selectedYear === year)) {
@@ -79,6 +83,8 @@ const parseRequest = async (r, selectedYear, selectedMonth) => {
                 m.innerHTML = str;
 
                 m.onclick = () => refreshHeaderBar(selectedYear, str)
+
+                scaleAnim(m)
 
                 if((!selectedMonth && i === 0) || (selectedMonth === str)) {
                     console.log(`Setting ${str} as selected month, because ${!selectedMonth ? `of index ${i} & no selected month!` : `the selected month is set as ${selectedMonth}!`}`);
