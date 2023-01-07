@@ -14,6 +14,13 @@ const render = (list) => {
         const i = img.cloneNode(true);
 
         a.style.cssText = i.style.cssText;
+
+        a.style[`padding-left`] = `20px`;
+        a.style[`padding-right`] = `20px`;
+
+        i.style.border = a.style.border; a.style.removeProperty(`border`)
+        i.style[`box-shadow`] = a.style[`box-shadow`]; a.style.removeProperty(`box-shadow`)
+
         i.style.width = `100%`;
         i.style[`margin-bottom`] = `0px`
         i.style[`margin-top`] = `0px`
