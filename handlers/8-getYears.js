@@ -26,8 +26,9 @@ const cacheNow = (firstRun) => new Promise(async res => {
                         let year, month
 
                         if(f.createdAt.noDateFound) {
+                            console.log(f)
                             year = f.location.split(`/`).length > 1 ? f.location.split(`/`)[0] : `files`
-                            month = f.location.split(`/`).length > 2 ? f.location.split(`/`)[1] : f.type
+                            month = !f.mediaType || f.mediaType == `video` || f.mediaType == `audio` ? `[unknown]` : f.location.split(`/`).length > 2 ? f.location.split(`/`)[1] : f.type
                         } else {
                             year = `${f.createdAt.utc.date.year}`;
                             month = `${f.createdAt.utc.date.month}`;
