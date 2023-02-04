@@ -11,7 +11,11 @@ module.exports = (files) => {
         if(!files.endsWith(`.png`) && !files.endsWith(`.jpg`)) {
             const probe = JSON.parse(require('child_process').spawnSync(`ffprobe`, [`-loglevel`, `0`, `-print_format`, `json`, `-show_format`, `-show_streams`, files]).stdout.toString());
     
-            if(!probe.format.format_name.toLowerCase().includes(`image`)) {
+            if(!probe || !probe.format || !probe.format.format_name) {
+                const str = `NO PROBE FOR ${files}`
+                console.log(`${`-`.repeat(str.length + 2)}\n ${str} \n${`-`.repeat(str.length + 2)}`);
+                prefix = `${files.split(`.`).slice(-1)[0]}-`
+            } else if(!probe.format.format_name.toLowerCase().includes(`image`)) {
                 if(probe.streams.filter(o => o.codec_type !== `audio`).length > 0) probe.streams = probe.streams.filter(o => o.codec_type !== `audio`)
 
                 const type = probe.streams.map(o => o.codec_type || `unk`).join(`-`);
