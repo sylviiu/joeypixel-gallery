@@ -3,7 +3,7 @@ const time = require(`../util/time`);
 
 let fileStructure = {};
 
-const readFileStructure = () => new Promise(async res => {
+const readFileStructure = (firstRun) => new Promise(async res => {
     console.log(`Reading structure...`)
     const parseDir = (dir) => new Promise(async res => {
         try {
@@ -20,7 +20,7 @@ const readFileStructure = () => new Promise(async res => {
                 parsedProgress = (Number(i)+1)/read.length
                 const parsed = await parseDir(dir + `/` + f)
                 mapped.push(parsed)
-                await new Promise(r => setTimeout(r, 10))
+                if(!firstRun) await new Promise(r => setTimeout(r, 10))
             };
 
             clearInterval(timer)
@@ -39,7 +39,7 @@ const readFileStructure = () => new Promise(async res => {
 
                 if(name.toLowerCase().startsWith(`spoiler_`)) name = name.slice(`spoiler_`.length)
 
-                let date = null, datestr = null;
+                let date = null, datestr = null, noDateFound = false;
 
                 if(name.startsWith(`VRChat_`) || name.startsWith(`vrchat_`)) {
                     if(name.split(`_`).length === 4 && !name.includes(`(`) && !name.split(`_`).slice(-1)[0].includes(`x`)) name = name.split(`_`).slice(1).join(`_`)
@@ -56,9 +56,11 @@ const readFileStructure = () => new Promise(async res => {
                     const yr = name.slice(0, 4), month = name.slice(4, 6), day = name.slice(6, 8), h = name.slice(8, 10), m = name.slice(10, 12), s = name.slice(12, 14);
                     datestr = `${yr}-${month}-${day.split(`.`)[0]}T${h}:${m}:${s.split(`.`)[0]}`
                     date = (new Date(datestr)).getTime()
+                } else {
+                    noDateFound = true;
                 };
 
-                if(!date) console.log(dir.split(`/`).slice(-1)[0], datestr)
+                if(!date && noDateFound) console.log(dir.split(`/`).slice(-1)[0], datestr)
 
                 const fd = fs.openSync(dir), fstat = fs.fstatSync(fd);
                 const ms = date || Object.entries(fstat).filter(o => o[0].endsWith(`Ms`)).map(o => o[1]).sort()[0]
@@ -71,9 +73,18 @@ const readFileStructure = () => new Promise(async res => {
                 //console.log(`${dir.split(`/`).slice(-1)[0]} as ${cachedImage} exists? ${cachedImages.indexOf(cachedImage) != -1 ? true : false}`)
 
                 const mediaType = cachedImage.includes(`-`) ? cachedImage.split(`-`).slice(0, -1).join(`-`) : null;
+                
+                if(mediaType && cachedImages.indexOf(cachedImage) != -1) {
+                    let location = `./cache/${cachedImage}`
+                    if(fs.existsSync(location)) {
+                        console.log(`CACHED IMAGE FOR ${dir.split(`/`).slice(-1)[0]} WITH MEDIA TYPE ${mediaType} EXISTS AT ${location}; deleting...`);
+                        fs.unlinkSync(location);
+                        cachedImages.splice(cachedImages.indexOf(cachedImage), 1)
+                    } else console.log(`NO CACHED IMAGE EXISTS FOR ${dir.split(`/`).slice(-1)[0]} W/ MEDIA TYPE ${mediaType} (${location})`)
+                }
 
                 const obj = {
-                    createdAt: { ms, utc },
+                    createdAt: { ms, utc, noDateFound },
                     name: dir.split(`/`).slice(-1)[0],
                     location: dir.split(`/`).slice(2).join(`/`),
                     mediaType: mediaType || `image`,
@@ -84,7 +95,7 @@ const readFileStructure = () => new Promise(async res => {
                     }
                 }
 
-                if(mediaType) console.log(`file ${dir} has cached name media type of ${mediaType}`, obj)
+                if(mediaType) console.log(`file ${dir} has cached name media type of ${mediaType}`)
 
                 res(obj)
             } catch(e2) {
@@ -101,7 +112,7 @@ const readFileStructure = () => new Promise(async res => {
     for (o of files) {
         const a = await parseDir(`./files/${o}`);
         f.push(a)
-        await new Promise(r => setTimeout(r, 10))
+        if(!firstRun) await new Promise(r => setTimeout(r, 10))
     }
 
     fileStructure = f;
@@ -113,7 +124,7 @@ let currentFileStructure = null
 const timer = async () => {
     while(true) {
         await new Promise(async r => {
-            currentFileStructure = readFileStructure();
+            currentFileStructure = readFileStructure(currentFileStructure ? false : true);
 
             await currentFileStructure;
 

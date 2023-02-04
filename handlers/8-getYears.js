@@ -3,7 +3,7 @@ const time = require(`../util/time`);
 
 let cached = null;
 
-const cacheNow = () => new Promise(async res => {
+const cacheNow = (firstRun) => new Promise(async res => {
     let toBeCached = {};
 
     console.log(`caching years`);
@@ -23,10 +23,17 @@ const cacheNow = () => new Promise(async res => {
                         parseFiles(f)
                     } else {
                         //console.log(`parsing ${f.location} as file`)
-                        const year = `${f.createdAt.utc.date.year}`;
+                        let year, month
+
+                        if(f.createdAt.noDateFound) {
+                            year = f.location.split(`/`).length > 1 ? f.location.split(`/`)[0] : `files`
+                            month = f.location.split(`/`).length > 2 ? f.location.split(`/`)[1] : f.type
+                        } else {
+                            year = `${f.createdAt.utc.date.year}`;
+                            month = `${f.createdAt.utc.date.month}`;
+                        }
+
                         if(!toBeCached[year]) toBeCached[year] = {};
-                        
-                        const month = `${f.createdAt.utc.date.month}`;
                         if(!toBeCached[year][month]) toBeCached[year][month] = [];
 
                         toBeCached[year][month].push(Object.assign({}, f, {
@@ -34,7 +41,7 @@ const cacheNow = () => new Promise(async res => {
                             year, month
                         }))
                     };
-                    await new Promise(r2 => setTimeout(r2, 5))
+                    if(!firstRun) await new Promise(r2 => setTimeout(r2, 10))
                 };
             }
         }; r()
@@ -47,7 +54,7 @@ const cacheNow = () => new Promise(async res => {
         let timer = setInterval(() => console.log(`years parsing progress: (index ${i}) / ${Math.round(progress*100)}%`), 3000)
         await parseFiles(f);
         clearInterval(timer);
-        await new Promise(r => setTimeout(r, 10))
+        if(!firstRun) await new Promise(r => setTimeout(r, 10))
     }
 
     cached = toBeCached
@@ -61,7 +68,7 @@ let currentFileStructure = null;
 const timer = async () => {
     while(true) {
         await new Promise(async r => {
-            currentFileStructure = cacheNow();
+            currentFileStructure = cacheNow(currentFileStructure ? false : true);
 
             await currentFileStructure;
 
