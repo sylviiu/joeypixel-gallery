@@ -6,7 +6,7 @@ const makeRequest = (location) => new Promise(async res => {
             const j = JSON.parse(this.responseText);
             res(j)
         } catch(e) {
-            console.warn(`Couldn't parse JSON: ${j}`);
+            console.warn(`Couldn't parse JSON:`, this.responseText);
             res(this.responseText)
         }
     });
