@@ -1,9 +1,11 @@
 const fs = require('fs');
 const jimp = require('jimp');
 const sharp = require('sharp');
-const cp = require('child_process')
+const cp = require('child_process');
 
-const makeImage = ({ dir, width, height, getBuffer, mediaType }) => new Promise(async res => {
+let font;
+
+const makeImage = ({ dir, width, height, getBuffer, mediaType, fileName }) => new Promise(async resolve => {
     const start = Date.now();
 
     if(!width) width = 432;
@@ -12,109 +14,168 @@ const makeImage = ({ dir, width, height, getBuffer, mediaType }) => new Promise(
 
     console.log(`Setting size ${width}x${height}; dir: ${dir}; buffer: ${getBuffer}`);
 
-    const sharpRun = (bufOverride) => new Promise(async (res2, rej) => {
-        console.log(`--- Running sharp... ${bufOverride ? `[buffer provided, length: ${bufOverride.length}]` : ``}`)
-        sharp(bufOverride || dir).resize({
-            width,
-            height,
-            inside: true,
-        }).toBuffer().then(res2).catch(rej)
-    })
-
-    const jimpFallback = async (bufOverride) => new Promise(async (res2, rej) => {
-        console.log(`--- Running jimp... ${bufOverride ? `[buffer provided, length: ${bufOverride.length}]` : ``}`)
-        try {
-            const img = await jimp.read(bufOverride || dir);
-            
-            img.cover(width, height);
-
-            if(mediaType) {
-                let lowestRes = width > height ? height : width
-
-                const play = await jimp.read(dir.split(`/files`)[0] + `/icons/media.png`);
-                play.resize(lowestRes/3, lowestRes/3);
-
-                img.composite(play, (width/2) - (lowestRes/2), (height/2) - (lowestRes/2))
+    const generators = {
+        sharpRun: () => new Promise(async (res2, rej) => {
+            sharp(dir).resize({
+                width,
+                height,
+                inside: true,
+            }).toBuffer().then(res2).catch(rej)
+        }),
+        jimpFallback: async ({bufOverride, renderBuffer}) => new Promise(async (res2, rej) => {
+            if(bufOverride) console.log(`[jimp] bufOverride was provided!`)
+            if(typeof renderBuffer != `boolean`) renderBuffer = getBuffer
+            try {
+                const img = await jimp.read(bufOverride || dir);
+                
+                img.cover(width, height);
+    
+                if(renderBuffer) {
+                    img.getBuffer(jimp.MIME_PNG, (e, buf) => {
+                        if(e) {
+                            rej(e)
+                        } else {
+                            res2(buf)
+                        }
+                    })
+                } else return res2(img)
+            } catch(e) {
+                rej(e)
             }
+        }),
+        ffmpegVideoFallback: () => new Promise(async (res2, rej) => {
+            // -i inputfile.mkv -vf "select=eq(n\,0)" -q:v 3 output_image.jpg
+            const ff = cp.spawn(`ffmpeg`, [
+                `-i`, dir,
+                `-ss`, `00:00:3`,
+                `-s`, `${width}x${height}`,
+                `-vframes`, `1`,
+                `-c:v`, `png`,
+                `-f`, `image2pipe`,
+                `-`,
+            ]);
+    
+            let buf = null;
+    
+            ff.stdout.on(`data`, d => {
+                if(!buf) {
+                    buf = d
+                } else {
+                    buf = Buffer.concat([buf, d])
+                }
+                console.log(`Got ${d.length} size buffer, total: ${buf.length}`)
+            });
+    
+            ff.on(`error`, (e) => {
+                console.warn(`Failed to run FF: ${e}`);
+                rej(e)
+            })
+            
+            ff.on(`close`, (sig) => {
+                console.log(`FF Closed with sig ${sig}`);
+                if(getBuffer) {
+                    res2(buf)
+                } else {
+                    jimpFallback(buf).then(res2).catch(rej)
+                }
+            });
+        })
+    }
 
-            if(getBuffer) {
-                img.getBuffer(jimp.MIME_PNG, (e, buf) => {
+    let img;
+
+    for (gen of Object.entries(generators)) {
+        console.log(`-- Attempting generator ${gen[0]}`);
+        if(!img) img = await new Promise(r => {
+            gen[1]({ 
+                renderBuffer: true
+            }).then(buf => {
+                if(buf && buf.length && buf.length > 0) {
+                    r(buf)
+                } else r(null)
+            }).catch(e => {
+                console.warn(`-- [!] Failed to use generator ${gen[0]}: ${e}.`);
+                r(null)
+            })
+        })
+    };
+
+    if(!img) {
+        console.log(`Image buffer was not successfully created; creating blank canvas`);
+
+        img = await new Promise(r => new jimp(width*2, height*2, `#575757`, (e, i) => {
+            if(e) {
+                console.error(e);
+                r(null)
+            } else if(i) {
+                let txt = fileName || mediaType || dir ? dir.split(`/`).slice(-1) : null || `{ unknown file }`;
+
+                if(txt.length > 64) txt = txt.slice(0, 60) + `...`
+                
+                i.print(font, 20, (height*2)-64, txt);
+
+                i.resize(width, height);
+
+                i.getBuffer(jimp.MIME_PNG, (e, buf) => {
                     if(e) {
-                        rej(e)
+                        console.error(e);
+                        r(null)
                     } else {
-                        res2(buf)
+                        r(buf)
                     }
                 })
-            } else return res2(img)
-        } catch(e) {
-            rej(e)
+            } else r(null)
+        }));
+
+        if(!img) {
+            console.warn(`Even after trying to create a canvas, there was STILL an error. Resolving with null`);
+            return resolve(null);
         }
-    })
+    } else console.log(`Image buffer was successfully created!`);
 
-    const ffmpegVideoFallback = () => new Promise(async (res2, rej) => {
-        console.log(`--- Running FFmpeg...`)
-        // -i inputfile.mkv -vf "select=eq(n\,0)" -q:v 3 output_image.jpg
-        const ff = cp.spawn(`ffmpeg`, [
-            `-i`, dir,
-            `-ss`, `00:00:3`,
-            `-s`, `${width}x${height}`,
-            `-vframes`, `1`,
-            `-c:v`, `png`,
-            `-f`, `image2pipe`,
-            `-`,
-        ]);
-
-        let buf = null;
-
-        ff.stdout.on(`data`, d => {
-            if(!buf) {
-                buf = d
-            } else {
-                buf = Buffer.concat([buf, d])
-            }
-            console.log(`Got ${d.length} size buffer, total: ${buf.length}`)
-        });
-
-        ff.on(`error`, (e) => {
-            console.warn(`Failed to run FF: ${e}`);
-            rej(e)
-        })
-        
-        ff.on(`close`, (sig) => {
-            console.log(`FF Closed with sig ${sig}`);
-            if(getBuffer) {
-                res2(buf)
-            } else {
-                jimpFallback(buf).then(res2).catch(rej)
-            }
-        });
-    })
-
-    try {
+    const res = async (buf) => {
         if(getBuffer) {
-             sharpRun().then(res).catch(e => {
-                console.warn(`${e} -- going to jimpFallback`);
-                jimpFallback().then(res).catch(e2 => {
-                    console.warn(`${e2} -- trying ffmpeg video frame extraction`)
-                    ffmpegVideoFallback().then(res).catch(e3 => {
-                        console.warn(`${e3}`);
-                        res(null)
-                    })
-                })
-             })
+            resolve(buf || img)
         } else {
-            jimpFallback().then(res).catch(e2 => {
-                console.warn(`${e2} -- trying ffmpeg video frame extraction`)
-                ffmpegVideoFallback().then(res).catch(e3 => {
-                    console.warn(`${e3}`);
-                    res(null)
-                })
-            })
+            const jimpObj = await generators.jimpFallback({ renderBuffer: false, bufOverride: buf || img })
+            resolve(jimpObj)
         }
-    } catch(e) {
-        console.error(e);
-        res(null)
     }
+
+    if(mediaType) {
+        let jimpObj = await generators.jimpFallback({ renderBuffer: false, bufOverride: img });
+
+        let lowestRes = width > height ? height : width;
+
+        let iconOverlay = null;
+
+        if(mediaType == `video` || mediaType == `audio`) {
+            iconOverlay = await jimp.read(dir.split(`/files`)[0] + `/icons/media.png`);
+        } else {
+            iconOverlay = await jimp.read(dir.split(`/files`)[0] + `/icons/file.png`);
+        };
+
+        if(iconOverlay) {
+            const size = lowestRes/3
+
+            iconOverlay.resize(size, size);
+            iconOverlay.brightness(1);
+
+            jimpObj.contrast(-.1);
+            jimpObj.brightness(-.3);
+
+            jimpObj.composite(iconOverlay, (width/2) - (size/2), (height/2) - (size/2));
+
+            jimpObj.getBuffer(jimp.MIME_PNG, (e, buf) => {
+                if(e) {
+                    res();
+                    console.warn(`Failed to get buffer of media file with icon overlay!`, e)
+                } else {
+                    res(buf)
+                }
+            })
+        } else res()
+    } else res()
 })
 
 const makeCollage = (...files) => new Promise(async res => {
@@ -189,11 +250,14 @@ const makeCollage = (...files) => new Promise(async res => {
 module.exports = {
     path: `/thumbnail/:path(*+)`,
     func: async (req, res) => {
+        if(!font) font = await jimp.loadFont(`./fonts/KlokanTechNotoSans/noto.fnt`)
         if(req.params.path) {
             let files = await new Promise(async resp => require(`./9-main`).func(req, Object.assign({}, res, {
                 send: resp,
                 sendFile: resp,
             })));
+
+            console.log(files)
 
             const args = req.params.path.split(`/`);
 
