@@ -1,5 +1,23 @@
 const app = require("express")();
-app.use(require('cors')({ origin: `http://127.0.0.1:8000`, optionsSuccessStatus: 200 }));
+
+const corsWhitelist = [
+    `http://127.0.0.1:8080`,
+    `http://127.0.0.1:8000`,
+    `http://localhost:8080`,
+    `http://localhost:8000`,
+]
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (corsWhitelist.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    }
+}
+
+app.use(require('cors')());
 const fs = require('fs');
 
 let update = () => new Promise(res => res(console.log(`Not checking for updates.`)))
@@ -27,7 +45,12 @@ update().then(() => {
 
             const reqType = obj.endpoint && typeof obj.endpoint == `string` && app[obj.endpoint.toLowerCase()] ? obj.endpoint.toLowerCase() : `get`
 
-            console.log(`${f} / ${reqType} @ ${obj.path}`)
+            console.log(`${f} / ${reqType} @ ${obj.path}`);
+
+            const funcs = [obj.func];
+
+            if(!obj.disableCors) funcs.unshift(require(`cors`)(corsOptions))
+
             app[reqType](obj.path, obj.func)
         } catch(e) {
             console.warn(`handler ${f} failed -- ${e}`)
