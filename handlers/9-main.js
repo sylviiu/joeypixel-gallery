@@ -1,5 +1,6 @@
 const fs = require('fs');
-const time = require(`../util/time`)
+const time = require(`../util/time`);
+const pathExists = require(`../util/pathExists`);
 
 module.exports = {
     path: `/:path(*+)`,
@@ -11,12 +12,12 @@ module.exports = {
 
         const args = req.params.path.split(`/`);
 
-        const rawFile = files.getFile(req.params.path)
+        const rawFile = files.getFile(req.params.path);
         
-        if(fs.existsSync(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`)) {
+        if(pathExists(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path || `index.html`}`)) {
             console.log(`Sending raw overriden file -- raw path was given, and override exists! [1] (${__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`})`);
-            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`)
-        } else if(fs.existsSync(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${rawFile}`)) {
+            res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path || `index.html`}`)
+        } else if(pathExists(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${rawFile}`)) {
             console.log(`Sending raw overriden file -- raw path was given, and override exists! [2] (${__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${req.params.path}`})`);
             res.sendFile(__dirname.split(`/`).slice(0, -1).join(`/`) + `/override/${rawFile}`)
         } else if(rawFile) {
