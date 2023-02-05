@@ -74,14 +74,14 @@ const readFileStructure = (firstRun) => new Promise(async res => {
 
                 const mediaType = cachedImage.includes(`-`) ? cachedImage.split(`-`).slice(0, -1).join(`-`) : null;
                 
-                if(mediaType && cachedImages.indexOf(cachedImage) != -1) {
+                /*if(mediaType && cachedImages.indexOf(cachedImage) != -1) {
                     let location = `./cache/${cachedImage}`
                     if(fs.existsSync(location)) {
                         console.log(`CACHED IMAGE FOR ${dir.split(`/`).slice(-1)[0]} WITH MEDIA TYPE ${mediaType} EXISTS AT ${location}; deleting...`);
                         fs.unlinkSync(location);
                         cachedImages.splice(cachedImages.indexOf(cachedImage), 1)
                     } else console.log(`NO CACHED IMAGE EXISTS FOR ${dir.split(`/`).slice(-1)[0]} W/ MEDIA TYPE ${mediaType} (${location})`)
-                }
+                }*/
 
                 const obj = {
                     createdAt: { ms, utc, noDateFound },
