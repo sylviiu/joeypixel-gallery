@@ -17,6 +17,20 @@ const corsOptions = {
     }
 }
 
+global.config = null;
+
+try {
+    if(require('fs').existsSync(`./config.json`)) {
+        global.config = Object.assign(require(`./config.example.json`), require(`./config.json`))
+        console.log(`Loaded config file!`);
+    } else {
+        global.config = require(`./config.example.json`);
+        console.log(`Loaded *default* config file!`);
+    }
+} catch(e) {
+    console.warn(`Failed reading the config file!`, e)
+};
+
 app.use(require('cors')());
 const fs = require('fs');
 

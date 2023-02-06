@@ -2,3 +2,4 @@ node_modules/
 files/
 cache/
 override/
+config.json

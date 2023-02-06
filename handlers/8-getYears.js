@@ -25,10 +25,12 @@ const cacheNow = (firstRun) => new Promise(async res => {
                         //console.log(`parsing ${f.location} as file`)
                         let year, month
 
-                        if(f.createdAt.noDateFound) {
-                            console.log(f)
+                        if(config.fileMode) {
                             year = f.location.split(`/`).length > 1 ? f.location.split(`/`)[0] : `files`
-                            month = f.location.split(`/`).length > 2 ? f.location.split(`/`)[1] : !f.mediaType || f.mediaType == `video` || f.mediaType == `audio` ? `[unknown]` : f.type
+                            month = f.location.split(`/`).length > 2 ? f.location.split(`/`)[1] : f.mediaType || f.type
+                        } else if(f.createdAt.noDateFound || (!f.createdAt.utc.date.year || !f.createdAt.utc.date.month)) {
+                            year = `[ unknown date ]`
+                            month = f.mediaType || `file`
                         } else {
                             year = `${f.createdAt.utc.date.year}`;
                             month = `${f.createdAt.utc.date.month}`;
