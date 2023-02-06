@@ -46,8 +46,9 @@ const cacheNow = (firstRun) => new Promise(async res => {
                             year, month
                         }))
                     };
-                    if(!firstRun) await new Promise(r2 => setTimeout(r2, 10))
                 };
+
+                if(!firstRun) await new Promise(r2 => setTimeout(r2, 10))
             }
         }; r()
     })
@@ -72,8 +73,12 @@ let currentFileStructure = null;
 
 const timer = async () => {
     while(true) {
+        let firstRun = true;
+        
         await new Promise(async r => {
-            currentFileStructure = cacheNow(currentFileStructure ? false : true);
+            currentFileStructure = cacheNow(firstRun);
+
+            if(firstRun) firstRun = false;
 
             await currentFileStructure;
 

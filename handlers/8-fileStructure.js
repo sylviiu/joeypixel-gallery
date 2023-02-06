@@ -99,6 +99,8 @@ const readFileStructure = (firstRun) => new Promise(async res => {
 
                 if(mediaType) console.log(`file ${dir} has cached name media type of ${mediaType}`)
 
+                if(!firstRun) await new Promise(r => setTimeout(r, 10))
+
                 res(obj)
             } catch(e2) {
                 console.warn(`Coudln't read directory OR file:\n- Directory: ${e}\n- File: ${e2}\nReturning null.`);
@@ -124,9 +126,13 @@ const readFileStructure = (firstRun) => new Promise(async res => {
 let currentFileStructure = null
 
 const timer = async () => {
+    let firstRun = true;
+
     while(true) {
         await new Promise(async r => {
-            currentFileStructure = readFileStructure(currentFileStructure ? false : true);
+            currentFileStructure = readFileStructure(firstRun);
+
+            if(firstRun) firstRun = false;
 
             await currentFileStructure;
 
