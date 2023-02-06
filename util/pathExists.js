@@ -20,7 +20,7 @@ module.exports = (path) => {
         };
     };
 
-    console.log(`[EXISTS]\n- Exists? ${exists}\n- Full path: ${path.join(`/`)}${suffix}`);
+    //console.log(`[EXISTS]\n- Exists? ${exists}\n- Full path: ${path.join(`/`)}${suffix}`);
 
     return exists;
 }
