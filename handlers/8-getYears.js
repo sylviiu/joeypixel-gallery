@@ -4,6 +4,8 @@ const time = require(`../util/time`);
 let cached = null;
 
 const cacheNow = (firstRun) => new Promise(async res => {
+    console.log(`Caching years object! (firstRun: ${firstRun})`)
+
     let toBeCached = {};
 
     console.log(`caching years`);

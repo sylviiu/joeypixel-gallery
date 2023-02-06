@@ -4,6 +4,8 @@ const time = require(`../util/time`);
 let fileStructure = {};
 
 const readFileStructure = (firstRun) => new Promise(async res => {
+    console.log(`Caching fileStructure object! (firstRun: ${firstRun})`)
+
     console.log(`Reading structure...`)
     const parseDir = (dir) => new Promise(async res => {
         try {
